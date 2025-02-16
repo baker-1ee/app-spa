@@ -7,6 +7,7 @@ type Expense = {
   id: number;
   category: string;
   amount: number;
+  type: "income" | "expense";
 };
 
 // Mock API 함수 (실제 API 요청 대신 사용)
@@ -14,11 +15,19 @@ async function fetchExpenses(): Promise<Expense[]> {
   return new Promise((resolve) => {
     setTimeout(() => {
       resolve([
-        { id: 1, category: "커피", amount: 2000 },
-        { id: 2, category: "식비", amount: 3000 },
-        { id: 3, category: "교통비", amount: 1500 },
+        { id: 1, category: "커피", amount: 2000, type: "expense" },
+        { id: 2, category: "식비", amount: 3000, type: "expense" },
+        { id: 3, category: "교통비", amount: 1500, type: "expense" },
       ]);
     }, 500); // 0.5초 딜레이 (API 응답 시뮬레이션)
+  });
+}
+
+async function postExpense(expense: Omit<Expense, "id">) {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve({ success: true, id: Date.now(), ...expense });
+    }, 500);
   });
 }
 
@@ -47,7 +56,17 @@ export default function Home() {
 
   const handleClosePopup = () => {
     setShowPopup(false);
-    setAmount(""); // 입력 정보 초기화
+    setAmount("");
+  };
+
+  const handleSaveExpense = async () => {
+    if (!amount.trim()) return;
+    const newExpense = { category: "기타", amount: Number(amount), type };
+    const response: any = await postExpense(newExpense);
+    if (response.success) {
+      setExpenses([...expenses, { ...newExpense, id: response.id }]);
+      handleClosePopup();
+    }
   };
 
   return (
@@ -64,7 +83,7 @@ export default function Home() {
             expenses.map((expense) => (
               <div key={expense.id} className="bg-gray-800 p-2 my-2 rounded-md flex justify-between">
                 <span>{expense.category}</span>
-                <span className="text-red-500">{expense.amount}원</span>
+                <span className={`text-${expense.type === "income" ? "green" : "red"}-500`}>{expense.amount}원</span>
               </div>
             ))
           ) : (
@@ -115,7 +134,10 @@ export default function Home() {
                 className="px-4 py-2 bg-gray-600 rounded-lg mr-2"
                 onClick={handleClosePopup}
               >취소</button>
-              <button className="px-4 py-2 bg-blue-500 rounded-lg">저장</button>
+              <button
+                className="px-4 py-2 bg-blue-500 rounded-lg"
+                onClick={handleSaveExpense}
+              >저장</button>
             </div>
           </div>
         </div>
